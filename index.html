@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本社故障履歴ビューア</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1em;
+      background: #f9f9f9;
+    }
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5em;
+      margin-bottom: 1em;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.4em;
+      text-align: left;
+    }
+    th {
+      background-color: #eee;
+    }
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      th {
+        display: none;
+      }
+      td {
+        border: none;
+        border-bottom: 1px solid #ccc;
+        position: relative;
+        padding-left: 50%;
+      }
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.5em;
+        top: 0.5em;
+        font-weight: bold;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>本社 故障履歴ビューア</h1>
+  <input type="text" id="search" placeholder="キーワード検索（例: 地名、機種、内容 など）" />
+
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th>日付</th>
+        <th>物件名</th>
+        <th>号機</th>
+        <th>機種</th>
+        <th>内容</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const searchInput = document.getElementById("search");
+    const tbody = document.querySelector("#data-table tbody");
+
+    // 年ごとに取得
+    const files = [
+      "fault_2017-1.json", "fault_2017-2.json",
+      "fault_2018-1.json", "fault_2018-2.json",
+      "fault_2019-1.json", "fault_2019-2.json",
+      "fault_2020-1.json", "fault_2020-2.json",
+      "fault_2021-1.json", "fault_2021-2.json",
+      "fault_2022-1.json", "fault_2022-2.json",
+      "fault_2023-1.json", "fault_2023-2.json"
+    ];
+
+    let allData = [];
+
+    function renderTable(data) {
+      tbody.innerHTML = "";
+      data.forEach((item) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td data-label="日付">${item.日付 || ""}</td>
+          <td data-label="物件名">${item.物件名 || ""}</td>
+          <td data-label="号機">${item.号機 || ""}</td>
+          <td data-label="機種">${item.機種 || ""}</td>
+          <td data-label="内容">${item.内容 || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterData(keyword) {
+      const lower = keyword.toLowerCase();
+      const filtered = allData.filter(item =>
+        Object.values(item).some(val =>
+          String(val).toLowerCase().includes(lower)
+        )
+      );
+      renderTable(filtered);
+    }
+
+    searchInput.addEventListener("input", (e) => {
+      filterData(e.target.value);
+    });
+
+    // JSONデータをすべて読み込む
+    Promise.all(files.map(file => fetch(file).then(res => res.json())))
+      .then(results => {
+        allData = results.flat();
+        renderTable(allData);
+      })
+      .catch(error => {
+        console.error("データ読み込みエラー:", error);
+      });
+  </script>
+</body>
+</html>
