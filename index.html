@@ -2,135 +2,104 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
+  <title>故障履歴ビューア</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>本社故障履歴ビューア</title>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 1em;
-      background: #f9f9f9;
-    }
-    h1 {
-      font-size: 1.5em;
-      margin-bottom: 0.5em;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 0.5em;
-      margin-bottom: 1em;
-      font-size: 1em;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9em;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 0.4em;
-      text-align: left;
-    }
-    th {
-      background-color: #eee;
-    }
-    @media (max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
-      th {
-        display: none;
-      }
-      td {
-        border: none;
-        border-bottom: 1px solid #ccc;
-        position: relative;
-        padding-left: 50%;
-      }
-      td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 0.5em;
-        top: 0.5em;
-        font-weight: bold;
-      }
-    }
+    body { font-family: sans-serif; padding: 1em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f0f0f0; }
+    input { padding: 5px; width: 300px; }
   </style>
 </head>
 <body>
-  <h1>本社 故障履歴ビューア</h1>
-  <input type="text" id="search" placeholder="キーワード検索（例: 地名、機種、内容 など）" />
-
-  <table id="data-table">
+  <h1>故障履歴ビューア</h1>
+  <input type="text" id="searchBox" placeholder="検索語を入力..." />
+  <table id="resultTable">
     <thead>
-      <tr>
-        <th>日付</th>
-        <th>物件名</th>
-        <th>号機</th>
-        <th>機種</th>
-        <th>内容</th>
-      </tr>
+      <tr id="tableHeader"></tr>
     </thead>
     <tbody></tbody>
   </table>
-
   <script>
-    const searchInput = document.getElementById("search");
-    const tbody = document.querySelector("#data-table tbody");
-
-    // 年ごとに取得
-    const files = [
-      "fault_2017-1.json", "fault_2017-2.json",
-      "fault_2018-1.json", "fault_2018-2.json",
-      "fault_2019-1.json", "fault_2019-2.json",
-      "fault_2020-1.json", "fault_2020-2.json",
-      "fault_2021-1.json", "fault_2021-2.json",
-      "fault_2022-1.json", "fault_2022-2.json",
-      "fault_2023-1.json", "fault_2023-2.json"
+    const dataFiles = [
+      "fault_2017-1.json",
+  "fault_2017-2.json",
+  "fault_2017-3.json",
+  "fault_2017-4.json",
+  "fault_2018-1.json",
+  "fault_2018-2.json",
+  "fault_2018-3.json",
+  "fault_2018-4.json",
+  "fault_2019-1.json",
+  "fault_2019-2.json",
+  "fault_2019-3.json",
+  "fault_2019-4.json",
+  "fault_2020-1.json",
+  "fault_2020-2.json",
+  "fault_2020-3.json",
+  "fault_2020-4.json",
+  "fault_2021-1.json",
+  "fault_2021-2.json",
+  "fault_2021-3.json",
+  "fault_2021-4.json",
+  "fault_2022-1.json",
+  "fault_2022-2.json",
+  "fault_2022-3.json",
+  "fault_2022-4.json",
+  "fault_2023-1.json",
+  "fault_2023-2.json",
+  "fault_2023-3.json",
+  "fault_2023-4.json"
     ];
-
     let allData = [];
 
+    async function loadData() {
+      for (const file of dataFiles) {
+        const res = await fetch(file);
+        const json = await res.json();
+        allData = allData.concat(json);
+      }
+      renderTable(allData);
+    }
+
     function renderTable(data) {
+      const tableHeader = document.getElementById("tableHeader");
+      const tbody = document.querySelector("#resultTable tbody");
       tbody.innerHTML = "";
-      data.forEach((item) => {
+      if (data.length === 0) return;
+
+      // ヘッダー生成
+      tableHeader.innerHTML = "";
+      Object.keys(data[0]).forEach(key => {
+        const th = document.createElement("th");
+        th.textContent = key;
+        tableHeader.appendChild(th);
+      });
+
+      // データ表示
+      data.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td data-label="日付">${item.日付 || ""}</td>
-          <td data-label="物件名">${item.物件名 || ""}</td>
-          <td data-label="号機">${item.号機 || ""}</td>
-          <td data-label="機種">${item.機種 || ""}</td>
-          <td data-label="内容">${item.内容 || ""}</td>
-        `;
+        Object.values(row).forEach(val => {
+          const td = document.createElement("td");
+          td.textContent = val;
+          tr.appendChild(td);
+        });
         tbody.appendChild(tr);
       });
     }
 
-    function filterData(keyword) {
-      const lower = keyword.toLowerCase();
-      const filtered = allData.filter(item =>
-        Object.values(item).some(val =>
-          String(val).toLowerCase().includes(lower)
+    document.getElementById("searchBox").addEventListener("input", e => {
+      const keyword = e.target.value.toLowerCase();
+      const filtered = allData.filter(row =>
+        Object.values(row).some(val =>
+          String(val).toLowerCase().includes(keyword)
         )
       );
       renderTable(filtered);
-    }
-
-    searchInput.addEventListener("input", (e) => {
-      filterData(e.target.value);
     });
 
-    // JSONデータをすべて読み込む
-    Promise.all(files.map(file => fetch(file).then(res => res.json())))
-      .then(results => {
-        allData = results.flat();
-        renderTable(allData);
-      })
-      .catch(error => {
-        console.error("データ読み込みエラー:", error);
-      });
+    loadData();
   </script>
 </body>
 </html>
